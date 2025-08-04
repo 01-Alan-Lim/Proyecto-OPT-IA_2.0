@@ -1,5 +1,6 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { v4: uuidv4 } = require('uuid');
+
 const config = {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     apiKey: process.env.AZURE_OPENAI_KEY,
@@ -9,11 +10,43 @@ const config = {
         default: "Eres un asistente útil que responde de manera clara y concisa",
         technical: "Eres un experto técnico. Proporciona respuestas detalladas con términos precisos.",
         simple: "Responde de manera breve y directa."
-    }
+    },
+    // --- NUEVAS VARIABLES DE CONFIGURACIÓN PARA AZURE AI SEARCH ---
+    searchServiceEndpoint: process.env.AZURE_AI_SEARCH_ENDPOINT,
+    searchApiKey: process.env.AZURE_AI_SEARCH_KEY,
+    searchIndexName: process.env.AZURE_AI_SEARCH_INDEX_NAME,
 };
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
 const containerClient = blobServiceClient.getContainerClient("chatia");
+
+// --- Función para realizar la búsqueda en Azure AI Search ---
+async function searchDocuments(query) {
+    const searchUrl = `${config.searchServiceEndpoint}/indexes/${config.searchIndexName}/docs/search?api-version=2023-10-01-preview`;
+    const searchBody = {
+        search: query,
+        queryType: "semantic",
+        semanticConfiguration: "ind-ia", // Configura esto según tu índice de búsqueda
+        select: "content" // Selecciona el campo que contiene el texto de los PDFs
+    };
+
+    const response = await fetch(searchUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "api-key": config.searchApiKey
+        },
+        body: JSON.stringify(searchBody)
+    });
+
+    if (!response.ok) {
+        throw new Error(`Error en la búsqueda de Azure AI Search: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const searchResults = data.value.map(result => result.content).join("\n\n");
+    return searchResults;
+}
 
 module.exports = async function (context, req) {
     context.res = {
@@ -60,6 +93,10 @@ module.exports = async function (context, req) {
         if (!question || typeof question !== 'string') {
             throw new Error("El texto proporcionado no es válido");
         }
+        
+        // --- CÓDIGO AÑADIDO PARA LA BÚSQUEDA ---
+        // Se llama a la función de búsqueda con la pregunta del usuario
+        const searchResultContent = await searchDocuments(question);
 
         let history = [];
         if (await blockBlobClient.exists()) {
@@ -72,69 +109,18 @@ module.exports = async function (context, req) {
             content: question,
             timestamp: new Date().toISOString()
         };
-
-        // --- Código para interactuar con Azure AI Search ---
-        const searchServiceEndpoint = process.env.AZURE_AI_SEARCH_ENDPOINT;
-        const searchApiKey = process.env.AZURE_AI_SEARCH_KEY;
-        const searchIndexName = process.env.AZURE_AI_SEARCH_INDEX_NAME;
-
-        // Función para realizar la búsqueda en Azure AI Search
-        async function searchDocuments(query) {
-            const searchUrl = `${searchServiceEndpoint}/indexes/${searchIndexName}/docs/search?api-version=2023-10-01-preview`;
-            const searchBody = {
-                search: query,
-                queryType: "semantic",
-                semanticConfiguration: "ind-ia", // Configura esto según tu índice
-                select: "conocimiento-1" // Selecciona el campo que contiene el texto de los PDFs
-            };
-
-            const response = await fetch(searchUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "api-key": searchApiKey
-                },
-                body: JSON.stringify(searchBody)
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error en la búsqueda de Azure AI Search: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            // Concatenamos el contenido de los resultados
-            const searchResults = data.value.map(result => result.content).join("\n\n");
-            return searchResults;
-        }
-
-        // ... En la función principal (module.exports) ...
-
-        // Busca en el índice de Azure AI Search
-        const searchResultContent = await searchDocuments(question);
-
+        
+        // --- MODIFICACIÓN DEL MENSAJE DEL SISTEMA ---
         let systemMessageContent = config.responseStyles[style] || config.responseStyles.default;
-
+        
         if (searchResultContent) {
             systemMessageContent += `\n\nBasándote en la siguiente información extraída de documentos: ${searchResultContent}`;
         }
-
+        
         const messages = [
             {
                 role: "system",
                 content: systemMessageContent
-            },
-            ...history.filter(m => m.role !== 'system'),
-            newMessage
-        ];
-        // ... El resto del código continúa igual ...
-
-
-
-
-        const messages = [
-            {
-                role: "system",
-                content: config.responseStyles[style] || config.responseStyles.default
             },
             ...history.filter(m => m.role !== 'system'),
             newMessage
