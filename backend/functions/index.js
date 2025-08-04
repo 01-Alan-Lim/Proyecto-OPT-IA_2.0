@@ -5,16 +5,17 @@ const config = {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     apiKey: process.env.AZURE_OPENAI_KEY,
     deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT,
-    apiVersion: "2023-05-15",
+    searchServiceEndpoint: process.env.AZURE_AI_SEARCH_ENDPOINT,
+    searchApiKey: process.env.AZURE_AI_SEARCH_KEY,
+    searchIndexName: process.env.AZURE_AI_SEARCH_INDEX_NAME,
+    apiVersion: "2025-01-01-preview",
     responseStyles: {
         default: "Eres un asistente útil que responde de manera clara y concisa",
         technical: "Eres un experto técnico. Proporciona respuestas detalladas con términos precisos.",
         simple: "Responde de manera breve y directa."
     },
     // --- NUEVAS VARIABLES DE CONFIGURACIÓN PARA AZURE AI SEARCH ---
-    searchServiceEndpoint: process.env.AZURE_AI_SEARCH_ENDPOINT,
-    searchApiKey: process.env.AZURE_AI_SEARCH_KEY,
-    searchIndexName: process.env.AZURE_AI_SEARCH_INDEX_NAME,
+    
 };
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
