@@ -1,0 +1,31 @@
+:root {
+  /* Colores principales */
+  --bg-primary: #121212;
+  --bg-secondary: #1E1E1E;
+  --bg-tertiary: #2A2A2A;
+  --text-primary: #E0E0E0;
+  --text-secondary: #B0B0B0;
+  
+  /* Nueva paleta de colores (azul y azul verdoso) */
+  --accent-primary: #1976d2;       /* Azul principal */
+  --accent-secondary: #1565c0;     /* Azul más oscuro */
+  --accent-highlight: #4db6ac;     /* Azul verdoso */
+  --accent-highlight-dark: #00897b; /* Azul verdoso oscuro */
+  
+  /* Colores de mensajes */
+  --message-user: #1c3a6b;         /* Azul oscuro para mensajes de usuario */
+  --message-ai: #2A2A2A;           /* Fondo oscuro para mensajes del asistente */
+  
+  /* Efectos y bordes */
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --transition: all 0.3s ease;
+  --border-radius: 8px;
+  --border-light: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* Espaciados */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}

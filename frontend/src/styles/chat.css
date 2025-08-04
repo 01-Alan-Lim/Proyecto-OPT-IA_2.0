@@ -1,0 +1,193 @@
+/* Área principal del chat */
+.chat-container {
+  flex: 1;
+  display: flex;
+  height: 100vh;
+}
+
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+  overflow: hidden;
+}
+
+.chat-header {
+  padding: var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-bottom: var(--border-light);
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.message {
+  max-width: 80%;
+  min-width: 40%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  border-radius: var(--border-radius);
+  line-height: 1.5;
+  position: relative;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeIn 0.3s ease forwards;
+  box-shadow: var(--shadow);
+  width: fit-content;
+}
+
+.message.user {
+  background-color: var(--message-user);
+  color: var(--text-primary);
+  margin-left: auto;
+  margin-right: 0;
+  border-bottom-right-radius: 4px;
+  max-width: 65%;
+}
+
+.message.assistant {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin-right: auto;
+  margin-left: 0;
+  border: var(--border-light);
+  border-bottom-left-radius: 4px;
+  max-width: 70%;
+}
+
+.message-content {
+  word-wrap: break-word;
+}
+
+.message-timestamp {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: var(--spacing-xs);
+  display: block;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+/* Input area */
+.input-container {
+  padding: var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border-top: var(--border-light);
+}
+
+.input-form {
+  display: flex;
+  gap: var(--spacing-md);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.chat-input {
+  flex: 1;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: 24px;
+  border: none;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+}
+
+.chat-input::placeholder {
+  color: rgba(224, 224, 224, 0.6);
+}
+
+.chat-input:focus {
+  background-color: var(--bg-tertiary);
+  box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+.send-btn {
+  padding: 0 var(--spacing-lg);
+  border-radius: 24px;
+  border: none;
+  background-color: var(--accent-primary);
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.send-btn:hover {
+  background-color: var(--accent-secondary);
+  transform: translateY(-2px);
+}
+
+.send-btn:disabled {
+  background-color: var(--bg-tertiary);
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.7;
+}
+
+/* Estilos para markdown */
+.message.assistant pre {
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius);
+  overflow-x: auto;
+}
+
+.message.assistant code {
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+}
+
+.message.assistant blockquote {
+  border-left: 3px solid var(--accent-highlight);
+  padding-left: var(--spacing-md);
+  margin: var(--spacing-sm) 0;
+  color: var(--text-secondary);
+}
+
+.message.assistant a {
+  color: var(--accent-highlight);
+  text-decoration: none;
+}
+
+.message.assistant a:hover {
+  text-decoration: underline;
+}
+
+/* Efectos de carga */
+.loading-dots {
+  display: flex;
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  margin: 0 var(--spacing-xs);
+  background-color: var(--accent-highlight);
+  border-radius: 50%;
+  display: inline-block;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
