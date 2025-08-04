@@ -1,0 +1,5 @@
+.chat-page-container {
+  display: flex;
+  height: 100vh;
+  transition: var(--transition);
+}

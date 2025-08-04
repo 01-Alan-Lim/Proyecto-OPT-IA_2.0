@@ -1,0 +1,65 @@
+# Directorios y archivos generados por Node.js/npm
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnp/
+.pnp.js
+
+# Directorios de compilación
+build/
+dist/
+out/
+.next/ # Para proyectos Next.js
+.nuxt/ # Para proyectos Nuxt.js
+.svelte-kit/ # Para proyectos SvelteKit
+public/build/ # Si tu build se genera dentro de public
+.vite/ # Para proyectos Vite
+
+# Archivos de configuración locales
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.DS_Store # Archivos de macOS
+Thumbs.db # Archivos de Windows
+
+# Logs
+*.log
+
+# Dependencias de paquetes
+package-lock.json # Si usas npm
+yarn.lock # Si usas yarn
+pnpm-lock.yaml # Si usas pnpm
+
+# Archivos temporales o de caché
+*.tmp
+*.swp
+*.swo
+*~
+.cache/
+.vscode/ # Configuración de VS Code específica del usuario (opcional, a veces se comparte)
+
+# Archivos de pruebas
+coverage/
+
+# Archivos de IDEs y editores (ejemplos)
+.idea/ # Directorios de IntelliJ IDEA
+*.iml # Archivos de IntelliJ IDEA
+.project
+.classpath
+.settings/
+
+# Archivos de bases de datos
+*.sqlite
+*.db
+*.sql
+
+# Archivos de seguridad (claves, etc.)
+*.pem
+*.key
+*.crt
+
+# Archivos de carga de archivos (si tu app permite subir archivos)
+/uploads/
