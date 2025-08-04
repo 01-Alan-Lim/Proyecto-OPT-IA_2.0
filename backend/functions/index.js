@@ -67,20 +67,46 @@ module.exports = async function (context, req) {
             history = JSON.parse(await streamToString(downloadResponse.readableStreamBody));
         }
 
-        const newMessage = {
-            role: 'user',
-            content: question,
-            timestamp: new Date().toISOString()
-        };
-        
+ // Define el nombre del contenedor donde tienes los documentos de referencia
+        const documentContainerName = "conocimiento-1"; // Asegúrate de que este es el nombre de tu contenedor
+
+        // Crea un cliente para el contenedor de documentos
+        const documentContainerClient = blobServiceClient.getContainerClient(documentContainerName);
+
+        // --- Lógica para buscar información relevante en Blob Storage ---
+        let documentContent = "";
+        const keywords = ["GUIA 1 - INTRODUCCION FLEXSIM 1.0", "GUIA 10 - MAPEO DE LA CADENA DE VALOR", "GUIA 11 - TEORIA DE MEDICIÓN DEL DESPILFARRO", "GUIA 12 - MUESTREO DE TRABAJO", "GUIA 13 - ESTUDIO DE TIEMPOS", "GUIA 14.1 - BALANCEO DE LÍNEA", "GUIA 14.2 - BALANCEO DE LÍNEA", "GUIA 15 - EVALUACIÓN FINANCIERA", "GUIA 4 - TEORIA DE RESTRICCIONES ", "GUIA 8 - DIAGRAMAS DE REGISTRO 1.0", "GUIA 9 - DIAGRAMAS DE REGISTRO 2.0", "GUIA - LISTA ID EMPRESAS"]; // Palabras clave para buscar en los documentos
+
+        for (const keyword of keywords) {
+            if (question.toLowerCase().includes(keyword.toLowerCase())) {
+                const documentBlobName = `${keyword}.pdf`; // Asume que tienes un archivo llamado "tema1.txt" en tu Blob Storage
+                const documentBlockBlobClient = documentContainerClient.getBlockBlobClient(documentBlobName);
+
+                if (await documentBlockBlobClient.exists()) {
+                    console.log(`Documento ${documentBlobName} encontrado. Extrayendo contenido...`);
+                    const downloadResponse = await documentBlockBlobClient.download();
+                    documentContent = await streamToString(downloadResponse.readableStreamBody);
+                    break; // Salimos del bucle si encontramos un documento
+                }
+            }
+        }
+
+
+       let systemMessageContent = config.responseStyles[style] || config.responseStyles.default;
+
+        if (documentContent) {
+            systemMessageContent += `\n\nBasándote en el siguiente contexto: ${documentContent}`;
+        }
+
         const messages = [
             {
                 role: "system",
-                content: config.responseStyles[style] || config.responseStyles.default
+                content: systemMessageContent
             },
             ...history.filter(m => m.role !== 'system'),
             newMessage
         ];
+
 
         const endpoint = config.endpoint.trim().replace(/\/$/, '');
         const apiUrl = `${endpoint}/openai/deployments/${config.deploymentName}/chat/completions?api-version=${config.apiVersion}`;
