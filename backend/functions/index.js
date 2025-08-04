@@ -26,7 +26,7 @@ async function searchDocuments(query) {
     const searchBody = {
         search: query,
         queryType: "semantic",
-        semanticConfiguration: "ind-ia", // Configura esto según tu índice de búsqueda
+        semanticConfiguration: "default", // Configura esto según tu índice de búsqueda
         select: "content" // Selecciona el campo que contiene el texto de los PDFs
     };
 
