@@ -6,7 +6,7 @@ import ChatInput from './ChatInput';
 const ChatArea = ({ messages, isLoading, error, onSubmit }) => {
   return (
     <div className="chat-main">
-      <ChatHeader title="Bienvenido a OPT-IA" />
+      <ChatHeader title="Agente OPT-IA" />
       
       <MessagesContainer 
         messages={messages}
