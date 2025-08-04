@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
+const API_URL = process.env.REACT_APP_API_URL || 'https://app-funtion-gnakajc6h7bkhyas.swedencentral-01.azurewebsites.net/api/';
 
 // Configuración global de axios
 const apiClient = axios.create({
