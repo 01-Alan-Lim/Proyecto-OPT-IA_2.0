@@ -67,35 +67,55 @@ module.exports = async function (context, req) {
             history = JSON.parse(await streamToString(downloadResponse.readableStreamBody));
         }
 
- // Define el nombre del contenedor donde tienes los documentos de referencia
-        const documentContainerName = "conocimiento-1"; // Asegúrate de que este es el nombre de tu contenedor
+        const newMessage = {
+            role: 'user',
+            content: question,
+            timestamp: new Date().toISOString()
+        };
 
-        // Crea un cliente para el contenedor de documentos
-        const documentContainerClient = blobServiceClient.getContainerClient(documentContainerName);
+        // --- Código para interactuar con Azure AI Search ---
+        const searchServiceEndpoint = process.env.AZURE_AI_SEARCH_ENDPOINT;
+        const searchApiKey = process.env.AZURE_AI_SEARCH_KEY;
+        const searchIndexName = process.env.AZURE_AI_SEARCH_INDEX_NAME;
 
-        // --- Lógica para buscar información relevante en Blob Storage ---
-        let documentContent = "";
-        const keywords = ["GUIA 1 - INTRODUCCION FLEXSIM 1.0", "GUIA 10 - MAPEO DE LA CADENA DE VALOR", "GUIA 11 - TEORIA DE MEDICIÓN DEL DESPILFARRO", "GUIA 12 - MUESTREO DE TRABAJO", "GUIA 13 - ESTUDIO DE TIEMPOS", "GUIA 14.1 - BALANCEO DE LÍNEA", "GUIA 14.2 - BALANCEO DE LÍNEA", "GUIA 15 - EVALUACIÓN FINANCIERA", "GUIA 4 - TEORIA DE RESTRICCIONES ", "GUIA 8 - DIAGRAMAS DE REGISTRO 1.0", "GUIA 9 - DIAGRAMAS DE REGISTRO 2.0", "GUIA - LISTA ID EMPRESAS"]; // Palabras clave para buscar en los documentos
+        // Función para realizar la búsqueda en Azure AI Search
+        async function searchDocuments(query) {
+            const searchUrl = `${searchServiceEndpoint}/indexes/${searchIndexName}/docs/search?api-version=2023-10-01-preview`;
+            const searchBody = {
+                search: query,
+                queryType: "semantic",
+                semanticConfiguration: "ind-ia", // Configura esto según tu índice
+                select: "conocimiento-1" // Selecciona el campo que contiene el texto de los PDFs
+            };
 
-        for (const keyword of keywords) {
-            if (question.toLowerCase().includes(keyword.toLowerCase())) {
-                const documentBlobName = `${keyword}.pdf`; // Asume que tienes un archivo llamado "tema1.txt" en tu Blob Storage
-                const documentBlockBlobClient = documentContainerClient.getBlockBlobClient(documentBlobName);
+            const response = await fetch(searchUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "api-key": searchApiKey
+                },
+                body: JSON.stringify(searchBody)
+            });
 
-                if (await documentBlockBlobClient.exists()) {
-                    console.log(`Documento ${documentBlobName} encontrado. Extrayendo contenido...`);
-                    const downloadResponse = await documentBlockBlobClient.download();
-                    documentContent = await streamToString(downloadResponse.readableStreamBody);
-                    break; // Salimos del bucle si encontramos un documento
-                }
+            if (!response.ok) {
+                throw new Error(`Error en la búsqueda de Azure AI Search: ${response.statusText}`);
             }
+
+            const data = await response.json();
+            // Concatenamos el contenido de los resultados
+            const searchResults = data.value.map(result => result.content).join("\n\n");
+            return searchResults;
         }
 
+        // ... En la función principal (module.exports) ...
 
-       let systemMessageContent = config.responseStyles[style] || config.responseStyles.default;
+        // Busca en el índice de Azure AI Search
+        const searchResultContent = await searchDocuments(question);
 
-        if (documentContent) {
-            systemMessageContent += `\n\nBasándote en el siguiente contexto: ${documentContent}`;
+        let systemMessageContent = config.responseStyles[style] || config.responseStyles.default;
+
+        if (searchResultContent) {
+            systemMessageContent += `\n\nBasándote en la siguiente información extraída de documentos: ${searchResultContent}`;
         }
 
         const messages = [
@@ -106,7 +126,19 @@ module.exports = async function (context, req) {
             ...history.filter(m => m.role !== 'system'),
             newMessage
         ];
+        // ... El resto del código continúa igual ...
 
+
+
+
+        const messages = [
+            {
+                role: "system",
+                content: config.responseStyles[style] || config.responseStyles.default
+            },
+            ...history.filter(m => m.role !== 'system'),
+            newMessage
+        ];
 
         const endpoint = config.endpoint.trim().replace(/\/$/, '');
         const apiUrl = `${endpoint}/openai/deployments/${config.deploymentName}/chat/completions?api-version=${config.apiVersion}`;
