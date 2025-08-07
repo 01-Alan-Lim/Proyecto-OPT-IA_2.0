@@ -5,7 +5,7 @@ const config = {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     apiKey: process.env.AZURE_OPENAI_KEY,
     deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT,
-    apiVersion: "2023-05-15",
+    apiVersion: "2024-05-01-preview", // Se actualiza a esta versión para usar data_sources
     responseStyles: {
         default: `Instrucciones para el Agente OPT-IA
 
@@ -29,40 +29,17 @@ Idioma: Todas las respuestas deben ser en español.
         technical: "Eres un experto técnico. Proporciona respuestas detalladas con términos precisos.",
         simple: "Responde de manera breve y directa."
     },
+    // --- NUEVAS VARIABLES DE CONFIGURACIÓN PARA AZURE AI SEARCH ---
     searchServiceEndpoint: process.env.AZURE_AI_SEARCH_ENDPOINT,
-    searchApiKey: process.env.AZURE_AI_SEARCH_KEY,
     searchIndexName: process.env.AZURE_AI_SEARCH_INDEX_NAME,
+    cognitiveServicesResource: process.env.AZURE_COGNITIVE_SERVICES_RESOURCE
 };
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
 const containerClient = blobServiceClient.getContainerClient("chatia");
 
-async function searchDocuments(query) {
-    const searchUrl = `${config.searchServiceEndpoint}/indexes/${config.searchIndexName}/docs/search?api-version=2023-10-01-preview`;
-    const searchBody = {
-        search: query,
-        queryType: "semantic",
-        semanticConfiguration: "default",
-        select: "content"
-    };
-
-    const response = await fetch(searchUrl, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "api-key": config.searchApiKey
-        },
-        body: JSON.stringify(searchBody)
-    });
-
-    if (!response.ok) {
-        throw new Error(`Error en la búsqueda de Azure AI Search: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const searchResults = data.value.map(result => result.content).join("\n\n");
-    return searchResults;
-}
+// La función searchDocuments ya no es necesaria con esta nueva lógica
+// La búsqueda se delega a la API de OpenAI
 
 module.exports = async function (context, req) {
     context.res = {
@@ -116,12 +93,6 @@ module.exports = async function (context, req) {
             const downloadResponse = await blockBlobClient.download();
             history = JSON.parse(await streamToString(downloadResponse.readableStreamBody));
         }
-        
-        // CÓDIGO PARA LA BÚSQUEDA DEL DOCUMENTO
-        let searchResultContent = '';
-        if (!isNewChat) { // No busques en el primer saludo
-          searchResultContent = await searchDocuments(question);
-        }
 
         const newMessage = {
             role: 'user',
@@ -130,7 +101,8 @@ module.exports = async function (context, req) {
         };
         
         const messages = [];
-
+        
+        // CÓDIGO PARA LA INTEGRACIÓN DEL SALUDO INICIAL
         if (isNewChat) {
             const initialGreeting = "¡Hola! 👋 Soy OPT-IA, tu agente virtual. Estoy aquí para ayudarte con tus dudas sobre tus prácticas empresariales y pasantías. ¿En qué puedo ayudarte hoy? 🚀";
             messages.push({
@@ -140,10 +112,6 @@ module.exports = async function (context, req) {
             messages.push(newMessage);
         } else {
             let systemMessageContent = config.responseStyles[style] || config.responseStyles.default;
-            if (searchResultContent) {
-                systemMessageContent += `\n\nBasándote en la siguiente información extraída de documentos: ${searchResultContent}`;
-            }
-
             messages.push({
                 role: "system",
                 content: systemMessageContent
@@ -155,17 +123,32 @@ module.exports = async function (context, req) {
         const endpoint = config.endpoint.trim().replace(/\/$/, '');
         const apiUrl = `${endpoint}/openai/deployments/${config.deploymentName}/chat/completions?api-version=${config.apiVersion}`;
         
+        const fetchBody = {
+            messages: messages,
+            temperature: 0.7,
+            max_tokens: 500,
+            // --- AQUÍ SE INTEGRA LA LÓGICA DE AZURE AI SEARCH ---
+            extra_body: {
+                data_sources: [{
+                    type: "azure_search",
+                    parameters: {
+                        endpoint: config.searchServiceEndpoint,
+                        index_name: config.searchIndexName,
+                        authentication: {
+                            type: "system_assigned_managed_identity"
+                        }
+                    }
+                }]
+            }
+        };
+
         const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "api-key": config.apiKey
             },
-            body: JSON.stringify({
-                messages: messages,
-                temperature: 0.7,
-                max_tokens: 500
-            })
+            body: JSON.stringify(fetchBody)
         });
 
         const responseData = await response.json();
