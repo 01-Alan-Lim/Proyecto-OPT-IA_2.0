@@ -5,7 +5,7 @@ const config = {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     apiKey: process.env.AZURE_OPENAI_KEY,
     deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
-    apiVersion: "2024-01-01-preview", // Se actualiza a esta versión para usar data_sources
+    apiVersion: "2024-05-01-preview", // Se actualiza a esta versión para usar data_sources
     responseStyles: {
         default: `Instrucciones para el Agente OPT-IA
 
