@@ -1,6 +1,4 @@
 
-import React from 'react';
-import { useMediaQuery } from '@mui/material';
 import Sidebar from '../components/slidebar/Sidebar';
 import ChatArea from '../components/chat/ChatArea';
 import useChat from '../hooks/useChat';
@@ -8,7 +6,6 @@ import useChatHistory from '../hooks/useChatHistory';
 import '../styles/chatPage.css';
 
 const ChatPage = ({ userId = 'default-user' }) => {
-  const isMobile = useMediaQuery('(max-width: 768px)');
   
   const { 
     messages, 
