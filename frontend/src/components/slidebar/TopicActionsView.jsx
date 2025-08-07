@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import { Button, Typography, Snackbar, Alert } from '@mui/material';
+import { 
+  Button, 
+  Typography, 
+  Snackbar, 
+  Alert,
+  Box
+} from '@mui/material';
 import { generateDocument, downloadDocument } from '../../services/api';
 
 const TopicActionsView = ({ topic, onBack, onSendToChat }) => {
   const [notification, setNotification] = useState(null);
 
-const handleAction = async (actionType) => {
+  const handleAction = async (actionType) => {
     try {
       const result = await generateDocument(topic, actionType);
       
@@ -24,25 +30,40 @@ const handleAction = async (actionType) => {
   };
 
   return (
-    <div className="actions-view">
+    <Box className="actions-view" sx={{ p: 1 }}>
       <Button 
         variant="outlined" 
         onClick={onBack}
-        style={{ marginBottom: '16px' }}
+        sx={{ 
+          mb: 1,
+          fontSize: '0.85rem',
+          width: '100%'
+        }}
       >
         Volver a temas
       </Button>
       
-      <Typography variant="subtitle1" gutterBottom>
-        Acciones para: {topic}
+      <Typography 
+        variant="subtitle1" 
+        gutterBottom
+        sx={{ 
+          fontSize: '0.9rem',
+          textAlign: 'center',
+          mb: 1
+        }}
+      >
+        {topic}
       </Typography>
       
-      <div className="action-buttons">
+      <Box className="action-buttons">
         <Button 
           variant="contained" 
           fullWidth 
           onClick={() => handleAction('summary')}
-          style={{ marginBottom: '8px' }}
+          sx={{ 
+            mb: 1,
+            fontSize: '0.85rem'
+          }}
         >
           Resumen del tema
         </Button>
@@ -51,7 +72,10 @@ const handleAction = async (actionType) => {
           variant="contained" 
           fullWidth 
           onClick={() => handleAction('data-table')}
-          style={{ marginBottom: '8px' }}
+          sx={{ 
+            mb: 1,
+            fontSize: '0.85rem'
+          }}
         >
           Tabla de datos
         </Button>
@@ -60,7 +84,10 @@ const handleAction = async (actionType) => {
           variant="contained" 
           fullWidth 
           onClick={() => handleAction('sources')}
-          style={{ marginBottom: '8px' }}
+          sx={{ 
+            mb: 1,
+            fontSize: '0.85rem'
+          }}
         >
           Fuentes para investigar
         </Button>
@@ -69,12 +96,15 @@ const handleAction = async (actionType) => {
           variant="contained" 
           fullWidth 
           onClick={() => handleAction('document')}
-          style={{ marginBottom: '8px' }}
+          sx={{ 
+            mb: 1,
+            fontSize: '0.85rem'
+          }}
           color="secondary"
         >
           Generar documento
         </Button>
-      </div>
+      </Box>
       
       <Snackbar
         open={!!notification}
@@ -84,11 +114,12 @@ const handleAction = async (actionType) => {
         <Alert 
           onClose={handleCloseNotification} 
           severity={notification?.severity || 'info'}
+          sx={{ width: '100%' }}
         >
           {notification?.message}
         </Alert>
       </Snackbar>
-    </div>
+    </Box>
   );
 };
 

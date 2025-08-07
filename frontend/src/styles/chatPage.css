@@ -1,5 +1,28 @@
+
+/* chatPage.css */
 .chat-page-container {
   display: flex;
   height: 100vh;
-  transition: var(--transition);
+  position: relative;
+}
+
+/* Contenedor principal del chat */
+.chat-main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  /* El margin se maneja automáticamente por MUI Drawer */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chat-page-container {
+    flex-direction: column;
+  }
+  
+  .chat-main-container {
+    width: 100%;
+    margin-left: 0 !important;
+  }
 }
