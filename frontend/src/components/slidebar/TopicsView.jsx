@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, CircularProgress } from '@mui/material';
+import { 
+  Typography, 
+  CircularProgress,
+  Box
+} from '@mui/material';
 import { getChatTopics } from '../../services/api';
 
 const TopicsView = ({ currentChatId, onTopicSelect }) => {
@@ -20,7 +24,6 @@ const TopicsView = ({ currentChatId, onTopicSelect }) => {
         setTopics(response.data?.topics || []);
       } catch (err) {
         setError(err.message);
-        // Mock fallback si hay error
         setTopics(['Tema de ejemplo 1', 'Tema de ejemplo 2']);
       } finally {
         setLoading(false);
@@ -30,11 +33,27 @@ const TopicsView = ({ currentChatId, onTopicSelect }) => {
     fetchTopics();
   }, [currentChatId]);
 
-  if (loading) return <CircularProgress style={{ margin: '20px auto' }} />;
-  if (error) return <Typography color="error">{error}</Typography>;
+  if (loading) return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+      <CircularProgress size={20} />
+    </Box>
+  );
+  
+  if (error) return (
+    <Typography 
+      color="error" 
+      sx={{ 
+        p: 1,
+        fontSize: '0.85rem',
+        textAlign: 'center'
+      }}
+    >
+      {error}
+    </Typography>
+  );
   
   return (
-    <div className="topics-list">
+    <Box className="topics-list" sx={{ p: 1 }}>
       {topics.length > 0 ? (
         topics.map((topic) => (
           <button
@@ -42,15 +61,21 @@ const TopicsView = ({ currentChatId, onTopicSelect }) => {
             className="topic-item"
             onClick={() => onTopicSelect(topic)}
           >
-            <Typography>{topic}</Typography>
+            <Typography sx={{ fontSize: '0.85rem' }}>{topic}</Typography>
           </button>
         ))
       ) : (
-        <Typography style={{ padding: 16 }}>
+        <Typography 
+          sx={{ 
+            p: 1,
+            fontSize: '0.85rem',
+            textAlign: 'center'
+          }}
+        >
           No se encontraron temas en este chat
         </Typography>
       )}
-    </div>
+    </Box>
   );
 };
 

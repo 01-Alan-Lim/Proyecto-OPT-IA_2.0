@@ -1,4 +1,6 @@
 
+import React from 'react';
+import { useMediaQuery } from '@mui/material';
 import Sidebar from '../components/slidebar/Sidebar';
 import ChatArea from '../components/chat/ChatArea';
 import useChat from '../hooks/useChat';
@@ -6,6 +8,8 @@ import useChatHistory from '../hooks/useChatHistory';
 import '../styles/chatPage.css';
 
 const ChatPage = ({ userId = 'default-user' }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
   const { 
     messages, 
     isLoading, 
@@ -66,12 +70,14 @@ const ChatPage = ({ userId = 'default-user' }) => {
         onSendToChat={handleSendToChat} 
       />
       
-      <ChatArea
-        messages={messages}
-        isLoading={isLoading}
-        error={error}
-        onSubmit={handleSubmit}
-      />
+      <div className="chat-main-container">
+        <ChatArea
+          messages={messages}
+          isLoading={isLoading}
+          error={error}
+          onSubmit={handleSubmit}
+        />
+      </div>
     </div>
   );
 };

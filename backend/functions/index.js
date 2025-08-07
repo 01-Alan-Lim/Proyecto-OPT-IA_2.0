@@ -5,48 +5,118 @@ const config = {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     apiKey: process.env.AZURE_OPENAI_KEY,
     deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT,
-    searchServiceEndpoint: process.env.AZURE_AI_SEARCH_ENDPOINT,
-    searchApiKey: process.env.AZURE_AI_SEARCH_KEY,
-    searchIndexName: process.env.AZURE_AI_SEARCH_INDEX_NAME,
-    apiVersion: "2025-01-01-preview",
+    apiVersion: "2023-05-15",
     responseStyles: {
         default: "Eres un asistente útil que responde de manera clara y concisa",
         technical: "Eres un experto técnico. Proporciona respuestas detalladas con términos precisos.",
         simple: "Responde de manera breve y directa."
-    },
-    // --- NUEVAS VARIABLES DE CONFIGURACIÓN PARA AZURE AI SEARCH ---
-    
+    }
 };
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
 const containerClient = blobServiceClient.getContainerClient("chatia");
+const documentsContainerClient = blobServiceClient.getContainerClient("documents");
 
-// --- Función para realizar la búsqueda en Azure AI Search ---
-async function searchDocuments(query) {
-    const searchUrl = `${config.searchServiceEndpoint}/indexes/${config.searchIndexName}/docs/search?api-version=2023-10-01-preview`;
-    const searchBody = {
-        search: query,
-        queryType: "semantic",
-        semanticConfiguration: "default", // Configura esto según tu índice de búsqueda
-        select: "content" // Selecciona el campo que contiene el texto de los PDFs
-    };
+let keywordMap = null;
+let guideDescriptions = null;
 
-    const response = await fetch(searchUrl, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "api-key": config.searchApiKey
-        },
-        body: JSON.stringify(searchBody)
-    });
-
-    if (!response.ok) {
-        throw new Error(`Error en la búsqueda de Azure AI Search: ${response.statusText}`);
+async function loadKeywordsAndDescriptions() {
+    if (keywordMap && guideDescriptions) return { keywordMap, guideDescriptions };
+    
+    const blobClient = containerClient.getBlockBlobClient("names/key-words.txt");
+    if (!await blobClient.exists()) {
+        keywordMap = {};
+        guideDescriptions = {};
+        return { keywordMap, guideDescriptions };
     }
 
-    const data = await response.json();
-    const searchResults = data.value.map(result => result.content).join("\n\n");
-    return searchResults;
+    const downloadResponse = await blobClient.download();
+    const content = await streamToString(downloadResponse.readableStreamBody);
+    
+    keywordMap = {};
+    guideDescriptions = {};
+    const lines = content.split('\n');
+    let currentSection = null;
+    let currentGuide = null;
+
+    for (const line of lines) {
+        if (line.startsWith('===')) {
+            if (line.includes('DESCRIPCIÓN')) currentSection = 'descriptions';
+            else if (line.includes('PALABRAS CLAVE')) currentSection = 'keywords';
+            continue;
+        }
+
+        if (line.trim() === '') continue;
+        
+        if (currentSection === 'descriptions' && line.includes('-')) {
+            const [guidePart, description] = line.split('-').map(item => item.trim());
+            const guideMatch = guidePart.match(/G\d+/);
+            if (guideMatch) {
+                currentGuide = guideMatch[0];
+                guideDescriptions[currentGuide] = description;
+            }
+        }
+        else if (currentSection === 'keywords' && line.includes('->')) {
+            const [keywords, guide] = line.split('->').map(item => item.trim());
+            keywords.split(',').forEach(keyword => {
+                keywordMap[keyword.trim().toLowerCase()] = guide;
+            });
+        }
+    }
+
+    return { keywordMap, guideDescriptions };
+}
+
+async function checkKeywords(text) {
+    const { keywordMap, guideDescriptions } = await loadKeywordsAndDescriptions();
+    const foundKeywords = {};
+    const lowerText = text.toLowerCase();
+
+    for (const [keyword, guide] of Object.entries(keywordMap)) {
+        if (lowerText.includes(keyword)) {
+            foundKeywords[keyword] = {
+                guide,
+                description: guideDescriptions[guide] || 'Descripción no disponible'
+            };
+        }
+    }
+
+    return foundKeywords;
+}
+
+async function getDocumentInfo(guideId) {
+    try {
+        const blobs = [];
+        for await (const blob of documentsContainerClient.listBlobsFlat({ prefix: guideId })) {
+            blobs.push(blob.name);
+        }
+
+        if (blobs.length > 0) {
+            const blobClient = documentsContainerClient.getBlockBlobClient(blobs[0]);
+            return {
+                url: blobClient.url,
+                filename: blobs[0].split('/').pop()
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Error getting document info:', error);
+        return null;
+    }
+}
+
+async function enhanceAIReponseWithDocuments(content, documents) {
+    if (!documents || documents.length === 0) return content;
+
+    let enhancedResponse = content + "\n\n📚 **Documentos recomendados:**\n";
+    
+    documents.forEach(doc => {
+        enhancedResponse += `\n👉 [${doc.filename}](${doc.url}): ${doc.description}\n`;
+    });
+
+    enhancedResponse += "\nPuedes descargar estos documentos desde los enlaces proporcionados.";
+
+    return enhancedResponse;
 }
 
 module.exports = async function (context, req) {
@@ -94,10 +164,6 @@ module.exports = async function (context, req) {
         if (!question || typeof question !== 'string') {
             throw new Error("El texto proporcionado no es válido");
         }
-        
-        // --- CÓDIGO AÑADIDO PARA LA BÚSQUEDA ---
-        // Se llama a la función de búsqueda con la pregunta del usuario
-        const searchResultContent = await searchDocuments(question);
 
         let history = [];
         if (await blockBlobClient.exists()) {
@@ -111,17 +177,10 @@ module.exports = async function (context, req) {
             timestamp: new Date().toISOString()
         };
         
-        // --- MODIFICACIÓN DEL MENSAJE DEL SISTEMA ---
-        let systemMessageContent = config.responseStyles[style] || config.responseStyles.default;
-        
-        if (searchResultContent) {
-            systemMessageContent += `\n\nBasándote en la siguiente información extraída de documentos: ${searchResultContent}`;
-        }
-        
         const messages = [
             {
                 role: "system",
-                content: systemMessageContent
+                content: config.responseStyles[style] || config.responseStyles.default
             },
             ...history.filter(m => m.role !== 'system'),
             newMessage
@@ -139,7 +198,7 @@ module.exports = async function (context, req) {
             body: JSON.stringify({
                 messages: messages,
                 temperature: 0.7,
-                max_tokens: 500
+                max_tokens: 800
             })
         });
 
@@ -149,10 +208,30 @@ module.exports = async function (context, req) {
             throw new Error(`Error ${response.status}: ${responseData.error?.message || 'Error en la API'}`);
         }
 
+        const keywordsFound = await checkKeywords(question);
+        const documents = [];
+
+        for (const [keyword, docInfo] of Object.entries(keywordsFound)) {
+            const docData = await getDocumentInfo(docInfo.guide);
+            if (docData) {
+                documents.push({
+                    keyword,
+                    guide: docInfo.guide,
+                    description: docInfo.description,
+                    url: docData.url,
+                    filename: docData.filename
+                });
+            }
+        }
+
+        let aiResponseContent = responseData.choices[0]?.message?.content;
+        aiResponseContent = await enhanceAIReponseWithDocuments(aiResponseContent, documents);
+
         const aiResponse = {
             role: 'assistant',
-            content: responseData.choices[0]?.message?.content,
-            timestamp: new Date().toISOString()
+            content: aiResponseContent,
+            timestamp: new Date().toISOString(),
+            documents: documents.length > 0 ? documents : undefined
         };
 
         const updatedHistory = [...history, newMessage, aiResponse];
@@ -164,8 +243,10 @@ module.exports = async function (context, req) {
             history: updatedHistory.map(m => ({
                 role: m.role,
                 content: m.content,
-                timestamp: m.timestamp
-            }))
+                timestamp: m.timestamp,
+                documents: m.documents
+            })),
+            documents: documents.length > 0 ? documents : undefined
         };
 
     } catch (error) {

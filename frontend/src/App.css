@@ -1,16 +1,17 @@
 :root {
-  --bg-primary: #f0f0f0; /* Fondo principal gris claro */
-  --bg-secondary: #e0e0e0; /* Fondo secundario gris un poco más claro */
-  --bg-tertiary: #ffffff; /* Fondo terciario blanco */
-  --text-primary: #333333; /* Texto principal oscuro */
-  --text-secondary: #666666; /* Texto secundario gris */
-  --accent-primary: #2e7d32; /* Verde oscuro para acentos */
-  --accent-secondary: #4caf50; /* Verde medio para botones al pasar el ratón */
-  --accent-highlight: #66bb6a; /* Verde claro para destacar */
-  --message-user: #e1f5fe; /* Mensajes de usuario en azul claro */
-  --message-ai: #cfd8dc; /* Mensajes de la IA en gris claro */
-  --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --border-radius: 8px;
+  --bg-primary: #121212;
+  --bg-secondary: #1E1E1E;
+  --bg-tertiary: #2A2A2A;
+  --text-primary: #E0E0E0;
+  --text-secondary: #B0B0B0;
+  --accent-primary: #8B0000;
+  --accent-secondary: #A52A2A;
+  --accent-highlight: #CC0000;
+  --message-user: #2C3E50;
+  --message-ai: #3A3A3A;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --transition: all 0.3s ease;
+  --border-radius: 8px;
 }
 
 /* Estilos base */
@@ -374,31 +375,4 @@ body {
 /* Adaptación para íconos */
 svg {
   color: var(--accent-highlight);
-}
-
-/* Media Query para pantallas pequeñas (por ejemplo, celulares) */
-@media (max-width: 768px) {
-  .app-container {
-    flex-direction: column; /* Cambia la dirección del diseño para que los elementos se apilen */
-  }
-
-  .sidebar {
-    width: 100%; /* La barra lateral ocupa el ancho completo de la pantalla */
-    height: auto; /* La altura se ajusta al contenido */
-    /* Puedes esconderla si no quieres que se vea en celular */
-    /* display: none; */
-  }
-
-  .chat-header {
-    font-size: 1rem; /* El tamaño de la fuente del encabezado es más pequeño */
-  }
-
-  /* Puedes ajustar otros elementos como el tamaño del input y los mensajes */
-  .input-form {
-    flex-direction: column;
-  }
-
-  .chat-input {
-    width: calc(100% - 20px);
-  }
 }
