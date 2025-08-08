@@ -4,8 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const config = {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     apiKey: process.env.AZURE_OPENAI_KEY,
-    deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
-    apiVersion: "2024-05-01-preview", // Se actualiza a esta versión para usar data_sources
+    deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT_NAME, // Nombre de la variable corregido
+    apiVersion: "2024-05-01-preview", 
     responseStyles: {
         default: `Instrucciones para el Agente OPT-IA
 
@@ -29,7 +29,6 @@ Idioma: Todas las respuestas deben ser en español.
         technical: "Eres un experto técnico. Proporciona respuestas detalladas con términos precisos.",
         simple: "Responde de manera breve y directa."
     },
-    // --- NUEVAS VARIABLES DE CONFIGURACIÓN PARA AZURE AI SEARCH ---
     searchServiceEndpoint: process.env.AZURE_AI_SEARCH_ENDPOINT,
     searchIndexName: process.env.AZURE_AI_SEARCH_INDEX_NAME,
     cognitiveServicesResource: process.env.AZURE_COGNITIVE_SERVICES_RESOURCE
@@ -37,9 +36,6 @@ Idioma: Todas las respuestas deben ser en español.
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
 const containerClient = blobServiceClient.getContainerClient("chatia");
-
-// La función searchDocuments ya no es necesaria con esta nueva lógica
-// La búsqueda se delega a la API de OpenAI
 
 module.exports = async function (context, req) {
     context.res = {
@@ -109,7 +105,6 @@ module.exports = async function (context, req) {
                 role: "system",
                 content: initialGreeting
             });
-            messages.push(newMessage);
         } else {
             let systemMessageContent = config.responseStyles[style] || config.responseStyles.default;
             messages.push({
@@ -117,17 +112,17 @@ module.exports = async function (context, req) {
                 content: systemMessageContent
             });
             messages.push(...history.filter(m => m.role !== 'system'));
-            messages.push(newMessage);
         }
+        messages.push(newMessage);
 
         const endpoint = config.endpoint.trim().replace(/\/$/, '');
         const apiUrl = `${endpoint}/openai/deployments/${config.deploymentName}/chat/completions?api-version=${config.apiVersion}`;
         
+        // --- EXTRA_BODY APLICADO EN TODAS LAS LLAMADAS ---
         const fetchBody = {
             messages: messages,
             temperature: 0.7,
             max_tokens: 500,
-            // --- AQUÍ SE INTEGRA LA LÓGICA DE AZURE AI SEARCH ---
             extra_body: {
                 data_sources: [{
                     type: "azure_search",
