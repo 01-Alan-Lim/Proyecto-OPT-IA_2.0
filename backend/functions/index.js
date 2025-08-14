@@ -1,14 +1,10 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { v4: uuidv4 } = require('uuid');
-require('dotenv').config();
 
 const config = {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     apiKey: process.env.AZURE_OPENAI_KEY,
     deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT,
-<<<<<<< HEAD
-    apiVersion: "2024-05-01-preview",
-=======
     apiVersion: "2024-05-01-preview", // Actualizada para soportar data sources
     // Configuración de Azure AI Search
     searchEndpoint: process.env.AZURE_AI_SEARCH_ENDPOINT,
@@ -36,7 +32,6 @@ Idioma: Todas las respuestas deben ser en español.`,
         technical: "Eres un experto técnico de OPT-IA. Proporciona respuestas detalladas con términos precisos basándote únicamente en la información de tus documentos fuente.",
         simple: "Eres OPT-IA. Responde de manera breve y directa basándote en tu base de conocimientos."
     }
->>>>>>> cfbc6fb7fc8d06af441534bf7ebc74a6a0e5cb65
 };
 
 let blobServiceClient = null;
@@ -239,36 +234,30 @@ module.exports = async function (context, req) {
             if (!chatId || chatId === 'undefined') {
                 throw new Error("ID de chat no proporcionado");
             }
-<<<<<<< HEAD
-            if (!await blockBlobClient.exists()) {
-=======
 
             if (!blockBlobClient || !await blockBlobClient.exists()) {
->>>>>>> cfbc6fb7fc8d06af441534bf7ebc74a6a0e5cb65
                 throw new Error(`Chat ${chatId} no encontrado`);
             }
+
             const downloadResponse = await blockBlobClient.download();
             const history = JSON.parse(await streamToString(downloadResponse.readableStreamBody));
             
             return context.res = {
                 body: { 
-                    history,
-                    chatId
+                    history: history,
+                    chatId: chatId
                 }
             };
         }
 
-        const { question } = req.body;
+        const { question, style = "default" } = req.body;
 
         if (!question || typeof question !== 'string') {
             throw new Error("El texto proporcionado no es válido");
         }
 
-<<<<<<< HEAD
-=======
         console.log('Processing question:', question);
 
->>>>>>> cfbc6fb7fc8d06af441534bf7ebc74a6a0e5cb65
         let history = [];
         if (blockBlobClient && await blockBlobClient.exists()) {
             try {
@@ -295,15 +284,6 @@ module.exports = async function (context, req) {
             content: question,
             timestamp: new Date().toISOString()
         };
-<<<<<<< HEAD
-
-        const systemPrompt = `Instrucciones para el Agente OPT-IA...`; // Tu prompt aquí
-
-        const messages = [
-            { role: "system", content: systemPrompt },
-            ...history.filter(m => m.role !== 'system'),
-            newMessage
-=======
         
         const messages = [
             {
@@ -320,34 +300,11 @@ module.exports = async function (context, req) {
                 role: newMessage.role,
                 content: newMessage.content
             }
->>>>>>> cfbc6fb7fc8d06af441534bf7ebc74a6a0e5cb65
         ];
 
         const endpoint = config.endpoint.trim().replace(/\/$/, '');
         const apiUrl = `${endpoint}/openai/deployments/${config.deploymentName}/chat/completions?api-version=${config.apiVersion}`;
         
-<<<<<<< HEAD
-        // --- LA CONFIGURACIÓN DE AZURE SEARCH AHORA ESTÁ EN EL CUERPO PRINCIPAL ---
-        const fetchBody = {
-            messages: messages,
-            temperature: 0.7,
-            max_tokens: 1000,
-            data_sources: [{
-                type: "azure_search",
-                parameters: {
-                    endpoint: process.env.AZURE_SEARCH_ENDPOINT,
-                    index_name: process.env.AZURE_SEARCH_INDEX_NAME,
-                    authentication: {
-                        type: "api_key",
-                        key: process.env.AZURE_SEARCH_KEY
-                    },
-                    semantic_configuration: "default",
-                    query_type: "semantic",
-                    in_scope: true,
-                    top_n_documents: 5
-                }
-            }]
-=======
         console.log('Making request to:', apiUrl);
 
         // Preparar el cuerpo de la solicitud
@@ -355,7 +312,6 @@ module.exports = async function (context, req) {
             messages: messages,
             temperature: 0.7,
             max_tokens: 1000
->>>>>>> cfbc6fb7fc8d06af441534bf7ebc74a6a0e5cb65
         };
 
         // Solo agregar data_sources si están configuradas todas las variables
@@ -390,19 +346,12 @@ module.exports = async function (context, req) {
         });
 
         const responseData = await response.json();
-<<<<<<< HEAD
-
-        if (!response.ok) {
-            console.error('Error de la API de OpenAI:', responseData);
-            throw new Error(`Error ${response.status}: ${responseData.error?.message || 'Error en la API'}`);
-=======
         
         console.log('Response status:', response.status);
         console.log('Response data:', JSON.stringify(responseData));
         
         if (!response.ok) {
             throw new Error(`Error ${response.status}: ${responseData.error?.message || JSON.stringify(responseData) || 'Error en la API'}`);
->>>>>>> cfbc6fb7fc8d06af441534bf7ebc74a6a0e5cb65
         }
 
         // Verificar palabras clave para documentos adicionales
@@ -456,7 +405,7 @@ module.exports = async function (context, req) {
 
         context.res.body = { 
             response: aiResponse.content,
-            chatId,
+            chatId: chatId,
             history: updatedHistory.map(m => ({
                 role: m.role,
                 content: m.content,
@@ -483,8 +432,12 @@ module.exports = async function (context, req) {
 async function streamToString(readableStream) {
     return new Promise((resolve, reject) => {
         const chunks = [];
-        readableStream.on('data', (data) => chunks.push(data.toString()));
-        readableStream.on('end', () => resolve(chunks.join('')));
+        readableStream.on('data', (data) => {
+            chunks.push(data.toString());
+        });
+        readableStream.on('end', () => {
+            resolve(chunks.join(''));
+        });
         readableStream.on('error', reject);
     });
 }
