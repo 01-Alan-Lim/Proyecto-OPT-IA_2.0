@@ -1,3 +1,6 @@
+# Archivos de configuración local con secretos
+backend/local.settings.json
+
 # Directorios y archivos generados por Node.js/npm
 node_modules/
 npm-debug.log
