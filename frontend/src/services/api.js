@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://app-funtion-gnakajc6h7bkhyas.swedencentral-01.azurewebsites.net/api/';
+const API_URL = process.env.REACT_APP_API_URL || 'https://app-funtion-gnakajc6h7bkhyas.swedencentral-01.azurewebsites.net/api/functions'; 
 
 const apiClient = axios.create({
     baseURL: API_URL,
@@ -33,7 +33,7 @@ export const getChatHistory = (userId) => {
 
 export const sendMessage = (userId, message, chatId) => {
     return apiClient.post(
-        '/functions',
+        '',
         { question: message, style: "default" },
         {
             params: { chatId }
@@ -43,7 +43,7 @@ export const sendMessage = (userId, message, chatId) => {
 
 export const loadChat = (userId, chatId) => {
     return apiClient.post(
-        '/functions',
+        '',
         { action: "load_chat" },
         {
             params: { chatId }
