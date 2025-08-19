@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://ambitious-mushroom-0d723cb03.2.azurestaticapps.net/api/'; 
+const API_URL = process.env.REACT_APP_API_URL || 'https://app-funtion-gnakajc6h7bkhyas.swedencentral-01.azurewebsites.net/api/'; 
 
 const apiClient = axios.create({
     baseURL: API_URL,
