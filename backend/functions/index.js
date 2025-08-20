@@ -5,7 +5,7 @@ const config = {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     apiKey: process.env.AZURE_OPENAI_KEY,
     deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT,
-    apiVersion: "2024-01-01-preview", // Actualizada para soportar data sources
+    apiVersion: "2024-05-01-preview", // Actualizada para soportar data sources
     // Configuración de Azure AI Search
     searchEndpoint: process.env.AZURE_AI_SEARCH_ENDPOINT,
     searchIndexName: process.env.AZURE_AI_SEARCH_INDEX_NAME,

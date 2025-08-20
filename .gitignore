@@ -65,3 +65,5 @@ coverage/
 
 # Archivos de carga de archivos (si tu app permite subir archivos)
 /uploads/
+
+local.settings.json  
